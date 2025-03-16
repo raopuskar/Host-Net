@@ -2,7 +2,12 @@ const express = require("express");
 const router = express.Router();
 const doctorController = require('../controllers/doctorController')
 
-//Login Doctoer
+
+
+router.get("/",function(req,res){
+    res.send("Doctor Page")
+});
+
 router.post("/login",doctorController.loginDoctor);
 
 router.get("/patients",function(req,res){

@@ -30,7 +30,7 @@ const TopDoctors = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 px-6">
         {doctors.slice(0,4).map((doctor) => (
           <div
-            key={doctor.id}
+            key={doctor._id}
             className="w-full max-w-md p-6 bg-white shadow-2xl rounded-2xl overflow-hidden transition-transform transform hover:-translate-y-3"
           >
             <img className="w-full h-60 object-contain rounded-lg" src={doctor.image} alt={doctor.name} />

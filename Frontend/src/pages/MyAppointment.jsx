@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { doctors } from "../assets/data/docAssets";
+import { useNavigate } from "react-router-dom";
 
 const Appointments = () => {
+
+
+
+
+
   const [appointments, setAppointments] = useState([]);
 
   // Load appointments when the component mounts

@@ -4,7 +4,7 @@ export const AdminContext = createContext();
 
 const AdminContextProvider = ({ children }) => {
 
-    const [aToken, setAToken] = useState(null); // 🔥 Initial null (not empty string)
+    const [aToken, setAToken] = useState(null); //  Initial null (not empty string)
     const [loading, setLoading] = useState(true); // Track loading state
 
     // Initialize token from localStorage

@@ -40,6 +40,8 @@ function App() {
         <Route path='/appointment/:docId' element={<Appointment />} />
         <Route path='/services' element={<Services />} />
         <Route path='/services/:docId' element={<Services />} />
+         {/* Koi aur route pr jayega toh home page pe redirect kardo */}
+        <Route path='/*' element={<Home />} />
       </Routes>
 
         <ToastContainer />

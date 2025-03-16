@@ -3,11 +3,13 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { AdminContext } from "../context/AdminContext";
+import { DoctorContext } from "../context/DoctorContext";
 
 const LoginPage = () => {
   const [role, setRole] = useState("Admin"); // Default role: Admin
   
-  const { setAToken,backendUrl, } = useContext(AdminContext)
+  const { setAToken,backendUrl } = useContext(AdminContext)
+  const { setDToken } = useContext(DoctorContext);
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,13 +28,18 @@ const LoginPage = () => {
     try { 
       const res = await axios.post(backendUrl + endpoint, data);
       
-      // Set both localStorage and context token
-      console.log("Toast function:", toast);
-      localStorage.setItem("aToken", res.data.token);
-      setAToken(res.data.token);
+      if(role === "Admin"){
+        // Set both localStorage and context token
+        localStorage.setItem("aToken", res.data.token);
+        setAToken(res.data.token);
+        navigate("/admin/dashboard");
+      }else{
+        localStorage.setItem("dToken", res.data.token);
+        setDToken(res.data.token);
+        navigate("/doctor/dashboard");
+      }
       toast.success("Login successful!");
-      navigate(role === "Admin" ? "/admin" : "/doctor-dashboard");
-
+      
     } catch (error) {
       console.error("Error:", error.response?.data);
       toast.error(error.response?.data?.message || "Login failed!");

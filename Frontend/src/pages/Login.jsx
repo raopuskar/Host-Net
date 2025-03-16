@@ -1,42 +1,51 @@
-import React, { useState } from "react";
-import axios from "axios"
+import React, { useState,useEffect } from "react";
+import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 const LoginPage = () => {
-  const [isRegister, setIsRegister] = useState(false); // Toggle between Login & Register
-  const [role, setRole] = useState("user"); // Default role: User
-  const [email,setEmail] = useState("");
-  const [password,setPassword] = useState("");
-  const [name,setName] = useState("");
-  const [loading,setLoading] = useState(false);
+  const [isRegister, setIsRegister] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Toggle form only for users
-  const toggleForm = () => {
-    if (role === "user") setIsRegister(!isRegister);
-  };
-
+  // Add this useEffect to check authentication status
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        // Redirect to home page if already logged in
+        navigate("/");
+        toast.info("You are already logged in!");
+      }
+    };
+    checkAuth();
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();  //preventing for reloading the page
+    e.preventDefault();
     setLoading(true);
 
     const endpoint = isRegister ? "/patient/register" : "/patient/login";
-    const data = { email, password, role };
+    const data = { email, password };
     if (isRegister) data.name = name;
 
     try {
-      console.log('Sending data:', data); //error
+      console.log("Sending data:", data);
       const res = await axios.post(`/api${endpoint}`, data);
-      // console.log('Response:', res.data);
       localStorage.setItem("token", res.data.token);
-      toast("Login successful!");
-      navigate(role === "admin" ? "/admin" : "/");
+      // If you have user data, store it too
+      if (res.data.user) {
+        localStorage.setItem("userData", JSON.stringify(res.data.user));
+      }
+      navigate("/");
+      window.location.reload();
+      toast.success("Login successful!");
     } catch (error) {
-      console.error('Full error:', error); // Error handeling
-      console.error('Error response:', error.response?.data); // Add this
-      alert(error.response?.data?.message || "Something went wrong!");
+      console.error("Error:", error.response?.data);
+      toast.error(error.response?.data?.message || "Something went wrong!");
     } finally {
       setLoading(false);
     }
@@ -49,45 +58,23 @@ const LoginPage = () => {
           {isRegister ? "User Registration" : "Login"}
         </h2>
 
-        {/* Role Selection (User / Admin) */}
-        <div className="flex justify-center gap-4 mb-6">
-          <button
-            className={`px-4 py-2 text-lg font-medium rounded-lg ${
-              role === "user"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-200 text-gray-800"
-            }`}
-            onClick={() => setRole("user")}
-          >
-            User
-          </button>
-          <button
-            className={`px-4 py-2 text-lg font-medium rounded-lg ${
-              role === "admin"
-                ? "bg-red-600 text-white"
-                : "bg-gray-200 text-gray-800"
-            }`}
-            onClick={() => {
-              setRole("admin");
-              setIsRegister(false); // Ensure admin cannot register
-            }}
-          >
-            Admin
-          </button>
-        </div>
-
         {/* Form */}
-        <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-          {/* Show Name field only when registering as User */}
-          {isRegister && role === "user" && (
+        <form
+          className="flex flex-col gap-4 outline-none"
+          onSubmit={handleSubmit}
+        >
+          {/* Show Name field only when registering */}
+          {isRegister && (
             <div>
-              <label className="block text-gray-600 font-medium">Full Name</label>
+              <label className="block text-gray-600 font-medium">
+                Full Name
+              </label>
               <input
                 type="text"
                 placeholder="Enter your name"
                 value={name}
-                onChange={(e)=> setName(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
+                onChange={(e) => setName(e.target.value)}
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
                 required
               />
             </div>
@@ -99,8 +86,8 @@ const LoginPage = () => {
               type="email"
               placeholder="Enter your email"
               value={email}
-              onChange={(e)=> setEmail(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-2 border outline-none rounded-lg focus:ring-2 focus:ring-blue-400"
               required
             />
           </div>
@@ -111,8 +98,8 @@ const LoginPage = () => {
               type="password"
               placeholder="Enter your password"
               value={password}
-              onChange={(e)=> setPassword(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none focus:ring-blue-400"
               required
             />
           </div>
@@ -120,7 +107,9 @@ const LoginPage = () => {
           <button
             type="submit"
             className={`w-full py-3 mt-4 text-white font-semibold rounded-lg ${
-              isRegister ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"
+              isRegister
+                ? "bg-green-600 hover:bg-green-700"
+                : "bg-blue-600 hover:bg-blue-700"
             } transition ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
             disabled={loading}
           >
@@ -128,18 +117,16 @@ const LoginPage = () => {
           </button>
         </form>
 
-        {/* Toggle between Login & Register (Only for Users) */}
-        {role === "user" && (
-          <p className="text-center text-gray-600 mt-4">
-            {isRegister ? "Already have an account?" : "New user?"}{" "}
-            <button
-              onClick={toggleForm}
-              className="text-blue-600 font-medium hover:underline"
-            >
-              {isRegister ? "Login here" : "Register here"}
-            </button>
-          </p>
-        )}
+        {/* Toggle between Login & Register */}
+        <p className="text-center text-gray-600 mt-4">
+          {isRegister ? "Already have an account?" : "New user?"}{" "}
+          <button
+            onClick={() => setIsRegister(!isRegister)}
+            className="text-blue-600 font-medium hover:underline"
+          >
+            {isRegister ? "Login here" : "Register here"}
+          </button>
+        </p>
       </div>
     </div>
   );

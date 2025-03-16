@@ -22,7 +22,23 @@ connectdb();
 
 
 //Middleware
-app.use(cors());
+app.use(cors({
+    origin: ["http://localhost:5173", "http://localhost:5174"], // Your frontend URL
+    credentials: true,  // This allows cookies to be sent
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+}));
+
+app.use("/images", express.static(path.join(__dirname, "public", "images"), {
+    setHeaders: (res, path, stat) => {
+      res.set("Access-Control-Allow-Origin", "*");  // Allow all origins (for debugging)
+      res.set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS"); 
+    }
+  }));
+  
+
+
+
 app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
@@ -36,6 +52,7 @@ app.use(     //you cant use flash without setuping the express session
 );
 app.use(flash());  //for using the flash message 
 app.use(express.static(path.join(__dirname,"public")));
+//app.use('/images/uploads', express.static(path.join(__dirname, 'public', 'images', 'uploads')));
 app.set("view engine",'ejs');
 
 // Routes
@@ -43,6 +60,10 @@ app.use("/",indexRouter);
 app.use("/admin", adminRouter);
 app.use("/patient",patientRouter);
 app.use("/doctor",doctorRouter)
+
+// Serve images from the uploads directory
+//app.use("/uploads", express.static(path.join(__dirname, "../public/images/uploads")));
+
 
 
 // Error handling middleware

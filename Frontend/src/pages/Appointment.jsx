@@ -133,7 +133,7 @@ const Appointment = () => {
 
             <div>
               <p className="flex item-center gap-1 text-sm font-medium text-gray-900 mt-3">
-                About <i class="fa-solid fa-info text-xs "></i>
+                About <i className="fa-solid fa-info text-xs "></i>
               </p>
               <p className="text-sm text-gray-500 max-w-[700px] mt-1">
                 {docInfo.about}

@@ -1,65 +1,85 @@
-import { useContext } from "react";
+import React, { useContext } from "react";
 import { AdminContext } from "./context/AdminContext";
-import { ToastContainer, toast } from 'react-toastify';
-import "react-toastify/dist/ReactToastify.css";  //add this if toast is not working
-import { Routes, Route, Navigate } from "react-router-dom";
+import { DoctorContext } from "./context/DoctorContext";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css"; //add this if toast is not working
+import { Routes, Route, Navigate, Link } from "react-router-dom";
 import LoginPage from "./pages/Login";
-import AdminDashboard from "./pages/AdminDashboard"; // Import your dashboard
-import DoctorDashboard from "./pages/DoctorDashboard"; // Import doctor dashboard
 
-const ProtectedRoute = ({ children }) => {
+import Navbar from "./components/Navbar";
+import Sidebar from "./components/Sidebar";
+
+import AdminDashboard from "./pages/Admin/AdminDashboard";
+import AddDoctor from "./pages/Admin/AddDoctor";
+import Doctors from "./pages/Admin/Doctors";
+import Appointments from "./pages/Admin/Appointments";
+
+import DoctorDashboard from "./pages/Doctor/DoctorDashboard";
+
+import Profile from "./pages/Doctor/Profile";
+import Appointment from "./pages/Doctor/Appointments";
+
+const App = () => {
   const { aToken } = useContext(AdminContext);
-  return aToken ? children : <Navigate to="/login" replace />;
-};
+  const { dToken } = useContext(DoctorContext);
 
-const PublicRoute = ({ children }) => {
-  const { aToken } = useContext(AdminContext);
-  return aToken ? <Navigate to="/admin" replace /> : children;
-};
+  // For admin users
+  if (aToken) {
+    return (
+      <div className="bg-[#f0f2f5]">
+        <ToastContainer />
+        <Navbar userType="admin" />
+        <div className="flex items-start">
+          <Sidebar userType="admin" />
+          <div className="flex-1 p-4">
+            <Routes>
+              <Route path="/" element={<Navigate to="/admin/dashboard" />} />
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/admin/doctors" element={<Doctors />} />
+              <Route path="/admin/appointments" element={<Appointments />} />
+              <Route path="/admin/add-doctor" element={<AddDoctor />} />
+              {/* Catch invalid admin routes */}
+              <Route path="/admin/*" element={<Navigate to="/admin/dashboard" />} />
+              {/* Prevent access to doctor routes */}
+              <Route path="/doctor/*" element={<Navigate to="/admin/dashboard" />} />
+            </Routes>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-function App() {
+  // For doctor users
+  if (dToken) {
+    return (
+      <div className="bg-[#f0f2f5]">
+        <ToastContainer />
+        <Navbar userType="doctor" />
+        <div className="flex items-start">
+          <Sidebar userType="doctor" />
+          <div className="flex-1 p-4">
+            <Routes>
+              <Route path="/" element={<Navigate to="/doctor/dashboard" />} />
+              <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
+              <Route path="/doctor/appointments" element={<Appointment />} />
+              <Route path="/doctor/profile" element={<Profile />} />
+              <Route path="/doctor/*" element={<Navigate to="/doctor/dashboard" />} />
+              {/* Prevent access to admin routes */}
+              <Route path="/admin/*" element={<Navigate to="/doctor/dashboard" />} />
+            </Routes>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If no token exists, show login page
   return (
     <>
-      <Routes>
-        {/* Redirect root to login */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
-
-        {/* Public Routes */}
-        <Route 
-          path="/login" 
-          element={
-            <PublicRoute>
-              <LoginPage />
-            </PublicRoute>
-          } 
-        />
-
-        {/* Protected Routes (Only logged-in users can access) */}
-        <Route 
-          path="/admin" 
-          element={
-            <ProtectedRoute>
-              <AdminDashboard />
-            </ProtectedRoute>
-          } 
-        />
-
-        <Route 
-          path="/doctor-dashboard" 
-          element={
-            <ProtectedRoute>
-              <DoctorDashboard />
-            </ProtectedRoute>
-          } 
-        />
-
-        {/* Catch-all for undefined routes */}
-        <Route path="*" element={<h1>404 - Page Not Found</h1>} />
-      </Routes>
-
+      <LoginPage />
       <ToastContainer />
     </>
   );
-}
+};
 
 export default App;
