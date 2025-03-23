@@ -6,7 +6,10 @@ const {
     logout,
     updateProfile,
     getAppointments, 
-    getProfile
+    getProfile,
+    bookAppointment,
+    cancelAppointment,
+    submitReview
 } = require("../controllers/patientController")
 const {patientMiddleware} = require("../middlewares/patientMiddleware");
 const upload = require("../middlewares/multer");
@@ -24,6 +27,12 @@ router.get('/my-appointment',patientMiddleware,getAppointments)
 router.get('/my-profile', patientMiddleware, getProfile);
 
 router.post('/my-profile',patientMiddleware,upload.single('image'), updateProfile);
+
+router.post("/book-appointment",patientMiddleware,bookAppointment);
+
+router.delete("/cancel-appointment/:id",cancelAppointment);
+
+router.post('/submit-review',patientMiddleware,submitReview)
 
 
 

@@ -1,7 +1,8 @@
 const bcrypt = require("bcrypt");
 const { generateToken } = require("../utils/generateToken");
 const patientModel = require("../models/patient.model");
-
+const appointmentModel = require("../models/appointment.model");
+const reviewSchema = require("../models/review.model")
 
 module.exports.registerUser = async function (req, res) {
   try {
@@ -61,6 +62,14 @@ module.exports.logout = function (req, res) {
       httpOnly: true, // Add this if your cookie is httpOnly
       secure: process.env.NODE_ENV === "production", // Add this if your cookie is secure
       sameSite: "strict" // Add appropriate SameSite policy
+    });
+
+    //Clear session cookie
+    res.clearCookie("connect.sid", {
+      path: "/",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
     });
     
     console.log("Logout successful");
@@ -162,7 +171,7 @@ module.exports.getProfile = async function (req, res) {
   try {
     const userId = req.user.id;
     const user = await patientModel.findById(userId).select("-password");
-    console.log("Fetching profile for user:", req.user); 
+    //console.log("Fetching profile for user:", req.user); 
 
     if(!user){
       return res.status(404).json({message: "User not found"});
@@ -175,7 +184,6 @@ module.exports.getProfile = async function (req, res) {
     // };
     
 
-    
     return res.status(200).json({ 
       message: "Profile retrieved successfully",
       user
@@ -190,28 +198,124 @@ module.exports.getProfile = async function (req, res) {
 };
 
 
-// In patientController.js
 module.exports.getAppointments = async function(req, res) {
 try {
-  console.log("Getting appointments for user:", req.user._id);
+  //console.log("Getting appointments for user:", req.user._id);
         
-  // Fetch the user with appointments
-  const user = await patientModel
-      .findById(req.user.id)
-      .populate('appointment');
-  
-  if (!user) {
-      return res.status(404).json({ message: "User not found" });
+  const patientId = req.user._id; // Extract from token
+  const appointments = await appointmentModel.find({ patientId }).populate("doctorId");
+
+  if (!appointments.length) {
+    return res.status(404).json({ message: "No appointments found" });
   }
 
-  return res.status(200).json({
-      success: true,
-      appointments: user.appointment
-  });
-} catch (error) {
-    res.status(500).json({
-        message: "Error fetching appointments",
-        error: error.message
+  // res.send(200).json(appointments);
+
+  
+  res.status(200).json(appointments);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching appointments", error });
+  }
+};
+
+
+
+module.exports.bookAppointment = async function (req, res) {
+  try {
+    const { doctorId, appointmentDate, timeslot } = req.body;
+    const userId = req.user.id;
+
+    // Check if user exists
+    const user = await patientModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Create and save the appointment
+    const newAppointment = await appointmentModel.create({
+      patientId: userId,
+      doctorId: doctorId,
+      appointmentDate: appointmentDate,
+      timeslot: timeslot,
+      status: "pending",
     });
-}
+
+    res.status(201).json({
+      message: "Appointment booked successfully",
+      appointment: newAppointment,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error booking appointment",
+      error: error.message,
+    });
+  }
+};
+
+
+module.exports.cancelAppointment = async function (req, res) {
+  try {
+    const appointmentId = req.params.id; // Get appointment ID from request params
+
+    const updatedAppointment = await appointmentModel.findOneAndUpdate(
+      { _id: appointmentId },
+      { status: "cancelled" }, 
+      { new: true } // Returns the updated document
+    );
+
+    if (!updatedAppointment) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    res.status(200).json({ message: "Appointment canceled successfully", appointment: updatedAppointment });
+  } catch (error) {
+    console.error("Error canceling appointment:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+
+module.exports.submitReview = async function(req, res) {
+  try {
+    const patientId = req.user.id; //id from middleware
+    const { review, rating, doctorId, appointmentId } = req.body;
+    
+    // check if the appointment exists
+    const appointment = await appointmentSchema.findOne({
+      _id: appointmentId,
+      patientId: patientId,
+      doctorId: doctorId
+    });
+    
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: "Appointment not found"
+      });
+    }
+    
+    // Create new review
+    const newReview = await reviewSchema.create({
+      patientId: patientId,
+      doctorId: doctorId,
+      appointmentId: appointmentId,
+      review: review,
+      rating: rating
+    });
+    
+    // Return success response
+    return res.status(201).json({
+      success: true,
+      message: "Review submitted successfully",
+      data: newReview
+    });
+    
+  } catch (error) {
+    console.error("Submit review error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to submit review",
+      error: error.message
+    });
+  }
 };

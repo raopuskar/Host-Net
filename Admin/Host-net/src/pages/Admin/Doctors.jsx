@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useContext } from 'react';
 import { Trash2, Edit, Search, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { AppContext } from '../../context/AppContext';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const DoctorsPage = () => {
   const [doctors, setDoctors] = useState([]);
@@ -9,31 +12,54 @@ const DoctorsPage = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [doctorToDelete, setDoctorToDelete] = useState(null);
 
+  const {backEndUrl,token} = useContext(AppContext);
+
+
+  
+  
+ //for bulk upload of doctors
+  // const uploadDoctors = async () => {
+  //   console.log(staticDoctors)
+  //   try {
+  //     const response = await axios.post(`${backEndUrl}/doctor/addMany`,staticDoctors, 
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           "Content-Type": "application/json",
+  //         },
+  //       }
+  //     );
+  //     console.log('Doctors added successfully:', response.data);
+  //   } catch (error) {
+  //     console.error('Error uploading doctors:', error);
+  //   }
+  // };
+  
+  // uploadDoctors();
+
+
+
   useEffect(() => {
-    // Simulate fetching doctors data
     const fetchDoctors = async () => {
       try {
-        // Replace with your actual API call
-        // const response = await fetch('/api/doctors');
-        // const data = await response.json();
+        const response = await axios.get(`${backEndUrl}/doctor/all`, {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+       // console.log("doctors:", response.data); // Debugging
         
-        // Mock data
-        const mockDoctors = [
-          { id: 1, name: 'Dr. Jane Smith', specialization: 'Cardiologist', email: 'jane.smith@example.com', phone: '(555) 123-4567', patients: 42 },
-          { id: 2, name: 'Dr. John Davis', specialization: 'Neurologist', email: 'john.davis@example.com', phone: '(555) 234-5678', patients: 38 },
-          { id: 3, name: 'Dr. Sarah Johnson', specialization: 'Pediatrician', email: 'sarah.johnson@example.com', phone: '(555) 345-6789', patients: 65 },
-          { id: 4, name: 'Dr. Michael Lee', specialization: 'Orthopedic Surgeon', email: 'michael.lee@example.com', phone: '(555) 456-7890', patients: 27 },
-          { id: 5, name: 'Dr. Emily Wilson', specialization: 'Dermatologist', email: 'emily.wilson@example.com', phone: '(555) 567-8901', patients: 53 },
-        ];
-        
-        setDoctors(mockDoctors);
-        setIsLoading(false);
+
+        setDoctors(response.data);
       } catch (error) {
         console.error("Error fetching doctors:", error);
-        setIsLoading(false);
+      } finally {
+        setIsLoading(false); // Set loading to false after fetching
       }
     };
-
+  
     fetchDoctors();
   }, []);
 
@@ -43,7 +69,7 @@ const DoctorsPage = () => {
 
   const filteredDoctors = doctors.filter(doctor => 
     doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    doctor.specialization.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    doctor.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
     doctor.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -53,20 +79,24 @@ const DoctorsPage = () => {
   };
 
   const handleDelete = async () => {
+    if (!doctorToDelete) return;
     try {
-      // Replace with your actual delete API call
-      // await fetch(`/api/doctors/${doctorToDelete.id}`, {
-      //   method: 'DELETE'
-      // });
-      
-      // For now, just filter out the doctor from state
-      setDoctors(doctors.filter(doctor => doctor.id !== doctorToDelete.id));
+      console.log("Doctor to delete:", doctorToDelete);
+      await axios.delete(`${backEndUrl}/doctor/delect/${doctorToDelete._id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      toast.success(`${doctorToDelete.name} deleted successfully`);
+  
+      setDoctors(doctors.filter(doctor => doctor._id !== doctorToDelete._id));
       setShowDeleteModal(false);
       setDoctorToDelete(null);
     } catch (error) {
       console.error("Error deleting doctor:", error);
     }
   };
+  
 
   if (isLoading) {
     return (
@@ -126,13 +156,13 @@ const DoctorsPage = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredDoctors.length > 0 ? (
                 filteredDoctors.map((doctor) => (
-                  <tr key={doctor.id} className="hover:bg-gray-50">
+                  <tr key={doctor._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="font-medium text-gray-900">{doctor.name}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                        {doctor.specialization}
+                        {doctor.specialty}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -176,7 +206,7 @@ const DoctorsPage = () => {
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
             <h3 className="text-lg font-medium mb-4">Confirm Delete</h3>
             <p className="text-gray-600 mb-6">
-              Are you sure you want to delete {doctorToDelete?.name}? This action cannot be undone.
+              Are you sure you want to delete {doctorToDelete?.name}?
             </p>
             <div className="flex justify-end gap-4">
               <button

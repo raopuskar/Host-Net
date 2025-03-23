@@ -108,6 +108,7 @@ const AddDoctor = () => {
       
       // Send data to API
       const response = await axios.post(backendUrl + '/admin/add-doctor', submitData, {
+        useCredentials: true,
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${aToken}` // Use aToken here

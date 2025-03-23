@@ -1,4 +1,4 @@
-
+import axios from 'axios';
 // Doctor Images
 import doc1 from '../doctor_img/doc1.jpg';
 import doc2 from '../doctor_img/doc2.png';
@@ -15,6 +15,49 @@ import doc12 from '../doctor_img/doc12.png';
 import doc13 from '../doctor_img/doc13.png';
 import doc14 from '../doctor_img/doc14.png';
 import doc15 from '../doctor_img/doc15.png';
+
+// const staticDoctors = [
+//     {
+//       name: 'Dr. Richard James',
+//       image: 'doc1.jpg',  // Replace with uploaded image URL
+//       speciality: 'General Physician',
+//       degree: 'MBBS',
+//       experience: '4 Years',
+//       about: 'Dr. James is dedicated to providing comprehensive medical care...',
+//       fees: 500,
+//       rating: 4.5,
+//       address: {
+//         line1: '17th Cross, Richmond',
+//         line2: 'Circle, Ring Road, London'
+//       }
+//     },
+//     {
+//       name: 'Dr. Emily Larson',
+//       image: 'doc2.png',
+//       speciality: 'Gynecologist',
+//       degree: 'MBBS',
+//       experience: '3 Years',
+//       about: 'Dr. Larson specializes in women health care...',
+//       fees: 600,
+//       rating: 4.1,
+//       address: {
+//         line1: '27th Cross, Richmond',
+//         line2: 'Circle, Ring Road, London'
+//       }
+//     },
+    
+//   ];
+
+//   const uploadDoctors = async () => {
+//     try {
+//       const response = await axios.post('http://localhost:3000/doctor/addMany', staticDoctors);
+//       console.log('Doctors added successfully:', response.data);
+//     } catch (error) {
+//       console.error('Error uploading doctors:', error);
+//     }
+//   };
+  
+  //uploadDoctors();
 
 
   
@@ -75,7 +118,7 @@ export const doctors = [
   {
       _id: 'doc4',
       name: 'Dr. Christopher Lee',
-      image: doc4,
+      image: doc4.png,
       speciality: 'Pediatrician',
       degree: 'MBBS',
       experience: '2 Years',
@@ -90,7 +133,7 @@ export const doctors = [
   {
       _id: 'doc5',
       name: 'Dr. Jennifer Garcia',
-      image: doc5,
+      image: doc5.png,
       speciality: 'Neurologist',
       degree: 'MBBS',
       experience: '4 Years',
@@ -105,7 +148,7 @@ export const doctors = [
   {
       _id: 'doc6',
       name: 'Dr. Andrew Williams',
-      image: doc6,
+      image: doc6.png,
       speciality: 'Neurologist',
       degree: 'MBBS',
       experience: '4 Years',
@@ -120,7 +163,7 @@ export const doctors = [
   {
       _id: 'doc7',
       name: 'Dr. Christopher Davis',
-      image: doc7,
+      image: doc7.png,
       speciality: 'General Physician',
       degree: 'MBBS',
       experience: '4 Years',
@@ -135,7 +178,7 @@ export const doctors = [
   {
       _id: 'doc8',
       name: 'Dr. Timothy White',
-      image: doc8,
+      image: doc8.png,
       speciality: 'Gynecologist',
       degree: 'MBBS',
       experience: '3 Years',
@@ -150,7 +193,7 @@ export const doctors = [
   {
       _id: 'doc9',
       name: 'Dr. Ava Mitchell',
-      image: doc9,
+      image: doc9.png,
       speciality: 'Dermatologist',
       degree: 'MBBS',
       experience: '1 Year',
@@ -165,7 +208,7 @@ export const doctors = [
   {
       _id: 'doc10',
       name: 'Dr. Jeffrey King',
-      image: doc10,
+      image: doc10.png,
       speciality: 'Pediatrician',
       degree: 'MBBS',
       experience: '2 Years',
@@ -180,7 +223,7 @@ export const doctors = [
   {
       _id: 'doc11',
       name: 'Dr. Zoe Kelly',
-      image: doc11,
+      image: doc11.png,
       speciality: 'Neurologist',
       degree: 'MBBS',
       experience: '4 Years',
@@ -195,7 +238,7 @@ export const doctors = [
   {
       _id: 'doc12',
       name: 'Dr. Patrick Harris',
-      image: doc12,
+      image: doc12.png,
       speciality: 'Neurologist',
       degree: 'MBBS',
       experience: '4 Years',
@@ -210,7 +253,7 @@ export const doctors = [
   {
       _id: 'doc13',
       name: 'Dr. Chloe Evans',
-      image: doc13,
+      image: doc13.png,
       speciality: 'General Physician',
       degree: 'MBBS',
       experience: '4 Years',
@@ -225,7 +268,7 @@ export const doctors = [
   {
       _id: 'doc14',
       name: 'Dr. Ryan Martinez',
-      image: doc14,
+      image: doc14.png,
       speciality: 'Gynecologist',
       degree: 'MBBS',
       experience: '3 Years',
@@ -240,7 +283,7 @@ export const doctors = [
   {
       _id: 'doc15',
       name: 'Dr. Amelia Hill',
-      image: doc15,
+      image: doc15.png,
       speciality: 'Dermatologist',
       degree: 'MBBS',
       experience: '1 Year',

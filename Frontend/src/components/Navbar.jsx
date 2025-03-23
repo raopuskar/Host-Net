@@ -6,9 +6,10 @@ import { toast } from "react-toastify";
 import axios from "axios";
 import { AppContext } from "../Context/AppContext";
 
+
 const Navbar = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const {backEndUrl,userData} = useContext(AppContext);
+  const {userData} = useContext(AppContext);
   const navigate = useNavigate();
 
   // Check token on component mount and when it changes
@@ -35,7 +36,7 @@ const Navbar = () => {
         
         setIsLoggedIn(false);
         toast.success(data.message || "Logged out successfully");
-        window.location.reload(true); // Force a fresh page load after logout
+        //window.location.reload(true); // Force a fresh page load after logout
 
         navigate("/");
       } else {
@@ -92,8 +93,13 @@ const Navbar = () => {
         <div className="flex items-center gap-2 cursor-pointer group relative">
           <img
             className="w-10 h-10 rounded-full object-scale-down"
-            src={`${backEndUrl}/${userData.image}`}
-            alt=""
+            src={
+              userData?.image
+                ? userData.image.startsWith("http")
+                  ? userData.image
+                  : `http://localhost:3000/${userData.image}`
+                : MyProfile_Pic // Default profile image if userData.image is missing
+            }            alt="Profile pic"
           />
           <i className="fa-solid fa-caret-down"></i>
           <div className="absolute top-0 right-0 pt-14 text-base font-medium text-gray-600 hidden group-hover:block z-20">

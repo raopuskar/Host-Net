@@ -14,6 +14,10 @@ const MyProfile = () => {
 
   axios.defaults.withCredentials = true;
 
+  if(!token){
+    return navigate("/")
+  }
+
 
   //Set initial profile image if user has one
   useEffect(() => {
@@ -65,7 +69,7 @@ const MyProfile = () => {
 
         if (response.data) {
           const updatedImageURL = `${response.data.user.image.replace(/^\/?/, '')}`;
-          // console.log(response.data.user.image);
+           console.log(response.data.user.image);
           // console.log("Updated Image URL:", updatedImageURL);
           // console.log(profileImage)
           setProfileImage(updatedImageURL);

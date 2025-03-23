@@ -10,6 +10,16 @@ router.get("/",function(req,res){
 
 router.post("/login",doctorController.loginDoctor);
 
+router.get("/all",doctorController.getAllDoctors);
+
+router.delete("/delect/:_id",doctorController.deleteDoctor);
+
+router.get("/get-profile/:id",doctorController.getDoctorData);
+
+//for bulk upload
+//router.post('/addMany',doctorController.addManyDoctors);
+
+
 router.get("/patients",function(req,res){
     res.send("Patient Page")
 });

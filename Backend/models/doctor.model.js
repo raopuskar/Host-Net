@@ -42,10 +42,12 @@ const doctorSchema = mongoose.Schema({
         type: String,
         required: true
     },
-    // slot_booked: {
-    //     type: Number,
-    //     default: {},
-    // },
+    slot_booked: [ 
+        {
+            type: Number,
+            default: {},
+        }
+    ],
     date:{
         type: Date,
         required: true
@@ -66,7 +68,8 @@ const doctorSchema = mongoose.Schema({
             type: Number, 
             // required: true, 
             min: 1, 
-            max: 5 
+            max: 5 ,
+            default: 1
         }
         }
     ],

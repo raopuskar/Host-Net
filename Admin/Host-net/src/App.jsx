@@ -63,9 +63,9 @@ const App = () => {
               <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
               <Route path="/doctor/appointments" element={<Appointment />} />
               <Route path="/doctor/profile" element={<Profile />} />
-              <Route path="/doctor/*" element={<Navigate to="/doctor/dashboard" />} />
+              {/* <Route path="/doctor/*" element={<Navigate to="/doctor/dashboard" />} /> */}
               {/* Prevent access to admin routes */}
-              <Route path="/admin/*" element={<Navigate to="/doctor/dashboard" />} />
+              {/* <Route path="/admin/*" element={<Navigate to="/doctor/dashboard" />} /> */}
             </Routes>
           </div>
         </div>
