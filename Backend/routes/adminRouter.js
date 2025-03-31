@@ -14,8 +14,6 @@ router.post("/register", adminController.registerAdmin);
 // Admin Login 
 router.post("/login", adminController.loginAdmin);
 
-
-
 //Add Doctor
 router.post("/add-doctor",adminAuth,upload.single('image'), adminController.addDoctor);  
 

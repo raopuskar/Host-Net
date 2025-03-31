@@ -1,138 +1,103 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Filter, Calendar, Clock, X } from 'lucide-react';
+import { useEffect, useState, useContext } from "react";
+import { Search, Filter, Calendar, Clock, X } from "lucide-react";
+import { AppContext } from "../../context/AppContext";
+import axios from "axios";
+import { toast } from "react-toastify";
 
 const AppointmentsPage = () => {
   const [appointments, setAppointments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [allRatings, setAllRatings] = useState([]);
 
+  const { allDoctors, allAppointments, allPatients, backEndUrl } = useContext(AppContext);
+
+  // First useEffect - enriches appointments with doctor and patient info
   useEffect(() => {
-    // Simulate fetching appointments data
-    const fetchAppointments = async () => {
+    if (allAppointments && allDoctors && allPatients) {
+      const enrichedAppointments = allAppointments.map((appointment) => {
+        const doctor =
+          allDoctors.find((doc) => doc._id === appointment.doctorId[0]) || {};
+        const patient =
+          allPatients.find((pat) => pat._id === appointment.patientId[0]) || {};
+
+        return {
+          ...appointment,
+          doctorName: doctor.name || "Unknown",
+          doctorSpecialization: doctor.specialization || "N/A",
+          patientName: patient.name || "Unknown",
+          patientEmail: patient.email || "N/A",
+          patientPhone: patient.phone || "N/A",
+        };
+      });
+
+      setAppointments(enrichedAppointments);
+      setIsLoading(false);
+    }
+  }, [allAppointments, allDoctors, allPatients]);
+
+  // Second useEffect - fetches ratings
+  useEffect(() => {
+    const fetchRatings = async () => {
       try {
-        // Replace with your actual API call
-        // const response = await fetch('/api/appointments');
-        // const data = await response.json();
-        
-        // Mock data
-        const mockAppointments = [
-          { 
-            id: 1, 
-            patientName: 'John Smith', 
-            patientEmail: 'john.smith@example.com',
-            patientPhone: '(555) 123-4567',
-            doctorName: 'Dr. Jane Wilson', 
-            doctorSpecialization: 'Cardiologist',
-            date: '2025-03-10', 
-            time: '09:30 AM', 
-            status: 'completed',
-            notes: 'Follow-up in 3 months'
-          },
-          { 
-            id: 2, 
-            patientName: 'Sarah Johnson', 
-            patientEmail: 'sarah.j@example.com',
-            patientPhone: '(555) 234-5678',
-            doctorName: 'Dr. Michael Lee', 
-            doctorSpecialization: 'Orthopedic Surgeon',
-            date: '2025-03-10', 
-            time: '11:00 AM', 
-            status: 'in-progress',
-            notes: 'X-ray results review'
-          },
-          { 
-            id: 3, 
-            patientName: 'Emily Davis', 
-            patientEmail: 'emily.davis@example.com',
-            patientPhone: '(555) 345-6789',
-            doctorName: 'Dr. Sarah Johnson', 
-            doctorSpecialization: 'Pediatrician',
-            date: '2025-03-10', 
-            time: '02:15 PM', 
-            status: 'cancelled',
-            notes: 'Patient canceled due to illness'
-          },
-          { 
-            id: 4, 
-            patientName: 'Robert Brown', 
-            patientEmail: 'rbrown@example.com',
-            patientPhone: '(555) 456-7890',
-            doctorName: 'Dr. John Davis', 
-            doctorSpecialization: 'Neurologist',
-            date: '2025-03-11', 
-            time: '10:00 AM', 
-            status: 'scheduled',
-            notes: 'First consultation'
-          },
-          { 
-            id: 5, 
-            patientName: 'Lisa Wilson', 
-            patientEmail: 'lisa.w@example.com',
-            patientPhone: '(555) 567-8901',
-            doctorName: 'Dr. Emily Wilson', 
-            doctorSpecialization: 'Dermatologist',
-            date: '2025-03-11', 
-            time: '03:30 PM', 
-            status: 'scheduled',
-            notes: 'Annual skin check'
-          },
-        ];
-        
-        setAppointments(mockAppointments);
-        setIsLoading(false);
+        const { data } = await axios.get(`${backEndUrl}/doctor/get-all-ratings`);
+        if (data) {
+          setAllRatings(data);
+        } else {
+          toast.error("No ratings found");
+        }
       } catch (error) {
-        console.error("Error fetching appointments:", error);
-        setIsLoading(false);
+        console.error("Error fetching ratings:", error);
+        toast.error("Failed to load ratings");
       }
     };
 
-    fetchAppointments();
-  }, []);
-
-  const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value);
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'scheduled':
-        return 'bg-blue-100 text-blue-800';
-      case 'in-progress':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+    if (backEndUrl) {
+      fetchRatings();
     }
-  };
+  }, [backEndUrl]);
 
-  const getStatusLabel = (status) => {
-    switch (status) {
-      case 'completed':
-        return 'Completed';
-      case 'scheduled':
-        return 'Scheduled';
-      case 'in-progress':
-        return 'In Progress';
-      case 'cancelled':
-        return 'Cancelled';
-      default:
-        return status;
+  // Third useEffect - combines appointments with ratings
+  // FIX: Only depend on allRatings and the original data sources, not appointments itself
+  useEffect(() => {
+    if (allRatings.length > 0 && allAppointments && allDoctors && allPatients) {
+      // Re-enrich appointments from scratch using original data sources
+      const updatedAppointments = allAppointments.map((appointment) => {
+        const doctor =
+          allDoctors.find((doc) => doc._id === appointment.doctorId[0]) || {};
+        const patient =
+          allPatients.find((pat) => pat._id === appointment.patientId[0]) || {};
+        const doctorRating =
+          allRatings.find((rat) => rat._id === appointment.doctorId[0]) || {};
+
+        return {
+          ...appointment,
+          doctorName: doctor.name || "Unknown",
+          doctorSpecialization: doctor.specialization || "N/A",
+          patientName: patient.name || "Unknown",
+          patientEmail: patient.email || "N/A",
+          patientPhone: patient.phone || "N/A",
+          rating: doctorRating.averageRating  || "No rating",
+        };
+      });
+
+      setAppointments(updatedAppointments);
     }
-  };
+  }, [allRatings, allAppointments, allDoctors, allPatients]);
 
-  const filteredAppointments = appointments.filter(appointment => {
-    const matchesSearch = 
-      appointment.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      appointment.doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      appointment.patientEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      appointment.date.includes(searchTerm);
-    
-    const matchesFilter = filterStatus === 'all' || appointment.status === filterStatus;
-    
+  // Filter appointments based on search and filter criteria
+  const filteredAppointments = appointments.filter((appointment) => {
+    const matchesSearch =
+      appointment.patientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      appointment.doctorName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      appointment.patientEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      appointment.appointmentDate?.includes(searchTerm);
+
+    const matchesFilter =
+      filterStatus === "all" ||
+      appointment.status.toLowerCase() === filterStatus.toLowerCase();
+
     return matchesSearch && matchesFilter;
   });
 
@@ -147,7 +112,7 @@ const AppointmentsPage = () => {
   return (
     <div className="p-4 bg-gray-50 min-h-screen w-full">
       <h1 className="text-xl font-bold mb-6">Appointments</h1>
-      
+
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         {/* Search Bar */}
         <div className="relative flex-grow">
@@ -159,12 +124,12 @@ const AppointmentsPage = () => {
             placeholder="Search by patient, doctor, or date"
             className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={searchTerm}
-            onChange={handleSearchChange}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
           {searchTerm && (
-            <button 
+            <button
               className="absolute inset-y-0 right-0 flex items-center pr-3"
-              onClick={() => setSearchTerm('')}
+              onClick={() => setSearchTerm("")}
             >
               <X size={18} className="text-gray-400 hover:text-gray-600" />
             </button>
@@ -191,15 +156,19 @@ const AppointmentsPage = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Appointments Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doctor</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Patient
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Doctor
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <div className="flex items-center">
                     <Calendar size={14} className="mr-1" />
@@ -212,42 +181,66 @@ const AppointmentsPage = () => {
                     Time
                   </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Avg.Rating(⭐)
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredAppointments.length > 0 ? (
                 filteredAppointments.map((appointment) => (
-                  <tr key={appointment.id} className="hover:bg-gray-50">
+                  <tr key={appointment._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="font-medium text-gray-900">{appointment.patientName}</div>
-                      <div className="text-sm text-gray-500">{appointment.patientEmail}</div>
-                      <div className="text-sm text-gray-500">{appointment.patientPhone}</div>
+                      <div className="font-medium text-gray-900">
+                        {appointment.patientName}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {appointment.patientEmail}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {appointment.patientPhone}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="font-medium text-gray-900">{appointment.doctorName}</div>
-                      <div className="text-sm text-gray-500">{appointment.doctorSpecialization}</div>
+                      <div className="font-medium text-gray-900">
+                        {appointment.doctorName}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {appointment.doctorSpecialization}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {appointment.date}
+                      {new Date(appointment.appointmentDate).toLocaleDateString(
+                        "en-GB",
+                        {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        }
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {appointment.time}
+                      {appointment.timeslot}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(appointment.status)}`}>
-                        {getStatusLabel(appointment.status)}
+                      <span className="px-2 py-1  text-xs  font-medium rounded-full bg-green-100 text-green-800">
+                        {appointment.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                      {appointment.notes}
+                    <td className="px-6 py-4 text-sm text-gray-500 ">
+                      {appointment.rating}
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                  <td
+                    colSpan="6"
+                    className="px-6 py-4 text-center text-gray-500"
+                  >
                     No appointments found matching your criteria
                   </td>
                 </tr>

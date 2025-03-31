@@ -17,7 +17,7 @@ const AdminContextProvider = ({ children }) => {
 
     // Persist token to localStorage whenever it changes
     useEffect(() => {
-        console.log("Admin Token Updated:", aToken);
+        //console.log("Admin Token Updated:", aToken);
         if (aToken) {
             localStorage.setItem('aToken', aToken);
         } else {

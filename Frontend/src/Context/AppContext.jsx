@@ -13,6 +13,8 @@ export const AppContextProvider = (props) => {
     const [token, setToken] = useState(localStorage.getItem("token") ? localStorage.getItem("token") : "");
     const [userData, setUserData] = useState(false);
     const [allDoctors, setAllDoctors] = useState([]);
+    const [rating, setRating] = useState(null);
+
 
     const getDoctorData = async (docId) => {
         try {
@@ -36,6 +38,32 @@ export const AppContextProvider = (props) => {
             toast.error(error.response?.data?.message || "Error fetching doctor data");
         }
     };
+
+
+    const getDoctorReview = async (docId) => {
+        try {
+            //console.log("id",docId)
+            const { data } = await axios.get(`${backEndUrl}/doctor/get-rating/${docId}`);
+
+            //console.log("Context",data)
+
+            if (data) {
+                setRating((prevRatings) => ({
+                    ...prevRatings,
+                    [docId]: {
+                        rating: data.averageRating || 0,
+                        reviews: data.totalReviews || 0,
+                    },
+                }));
+            } else {
+                toast.error(data.message);
+            }
+        } catch (error) {
+            console.error("Error fetching raiting",error);
+            toast.error(error.response?.data?.message || "Error fetching doctor data");
+        }
+
+    }
     
 
     const allDoctorsList = async () => {
@@ -94,7 +122,11 @@ export const AppContextProvider = (props) => {
         setUserData,
         loadUserProfileData,
         allDoctorsList,
-        allDoctors
+        allDoctors,
+        setAllDoctors,
+        getDoctorReview,
+        rating,
+        setRating
     }
     
     

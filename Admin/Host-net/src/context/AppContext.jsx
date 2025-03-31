@@ -13,26 +13,108 @@ const AppContextProvider = (props) => {
 
     const [doctors, setDoctors] = useState(false);
     const [token, setToken] = useState(localStorage.getItem("token") ? localStorage.getItem("token"):"");
+    const [allDoctors, setAllDoctors] = useState([]);
+    const [allPatients, setAllPatients] = useState([]);
+    const [allAppointments,setAllAppointments] = useState([]);
+    const [allReviews,setAllReviews] = useState([])
 
 
-    const getDoctorData = async () => {
+    const getDoctorData = async (docId) => {
         try {
-            const {data} = await axios.get(backEndUrl + "/doctor", {
-                 withCredentials: true ,
+            console.log("App context: ",docId)
+            const { data } = await axios.get(`${backEndUrl}/doctor/get-profile/${docId}`, {
+                withCredentials: true,
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+               
+            if (data) {
+                setDoctors(data.data);
+                //console.log("Doctor Data:", data);
+            } else {
+                toast.error(data.message);
+            }
+        } catch (error) {
+            console.error("Error fetching doctor data:", error);
+            toast.error(error.response?.data?.message || "Error fetching doctor data");
+        }
+    };
+
+
+    const allDoctorsList = async () => {
+        try {
+            const { data } = await axios.get(backEndUrl + "/doctor/all", {
+                withCredentials: true,
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             });
 
-            if(data.success){
-                setDoctors(data.data)
-            }else{
-                toast.error(data.message)
+            //console.log("Data",data)
+
+            if (data) {
+                setAllDoctors(data)
+            } else {
+                toast.error(data.message);
+                return "Unknown";  // Return a default value if doctor data is not available
             }
         }
         catch (error) {
             console.log(error)
-            toast.error("error.message") 
+            toast.error(error.message) // Removed quotes to show actual error message
+        }
+    }
+    
+    const allPatientsList = async () => {
+        try {
+            const { data } = await axios.get(backEndUrl + "/patient/all", {
+                withCredentials: true,
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            //console.log("Patient Data",data)
+
+            if (data) {
+                setAllPatients(data)
+            } else {
+                toast.error(data.message);
+                return "Unknown";  // Return a default value if doctor data is not available
+            }
+        }
+        catch (error) {
+            console.log(error)
+            toast.error(error.message) // Removed quotes to show actual error message
+        }
+    }
+    
+    const allAppointmentList = async() => {
+        try {
+            const {data} = await axios.get(backEndUrl + "/doctor/get-all-appointmnet")
+
+            if(data){
+                setAllAppointments(data);
+            }else{
+                toast.error(data.message)
+            }
+        } catch (error) {
+            console.log(error)
+            toast.error(error.message)
+        }
+    }
+
+    const allReviewss = async function(req,res){
+        try {
+            const {data} = await axios.get(`${backEndUrl}/doctor/get-all-reviews`)
+            //console.log("data",data)
+            if(data){
+                setAllReviews(data)
+            }
+        } catch (error) {
+            console.log(error)
+            toast.error(error.message)
         }
     }
 
@@ -42,13 +124,44 @@ const AppContextProvider = (props) => {
         doctors,
         getDoctorData,
         token,
-        setToken
+        setToken,
+        allDoctors,
+        setAllDoctors,
+        allDoctorsList,
+        allAppointments,
+        allPatientsList,
+        allPatients,
+        allReviews
     }
+
+    useEffect(() => {
+        if (backEndUrl) {  
+            allDoctorsList();
+        }
+    }, [backEndUrl]); 
+
+    useEffect(() => {
+        if (backEndUrl) { 
+            allPatientsList();
+        }
+    }, [backEndUrl,token]); 
+
+    useEffect(() => {
+        allAppointmentList()
+    },[backEndUrl,token])
+
+    useEffect(() => {
+        allReviewss()
+    },[backEndUrl,token])
+
+
     return (
         <AppContext.Provider value={value}>
             {props.children}
         </AppContext.Provider>
     )
+
+    
 }
 
 export default AppContextProvider

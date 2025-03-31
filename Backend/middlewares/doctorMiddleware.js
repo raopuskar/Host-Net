@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
-const adminModel = require("../models/admin.model");
+const doctorModel = require("../models/doctor.model");
 
-const adminAuth = async (req, res, next) => {
+const doctorAuth = async (req, res, next) => {
     try {
         const token = req.header("Authorization");
 
@@ -24,10 +24,12 @@ const adminAuth = async (req, res, next) => {
         req.user = decoded;
 
         // Check if the user is an admin
-        const admin = await adminModel.findById(req.user.id);
-        if (!admin) {
+        const doctor = await doctorModel.findById(req.user.id);
+        if (!doctor) {
             return res.status(403).send("Access denied. Admins only.");
         }
+        //console.log("Doctor authenticated:", doctor._id);
+        
 
         next();  // Allow request to continue
 
@@ -36,4 +38,4 @@ const adminAuth = async (req, res, next) => {
     }
 };
 
-module.exports = adminAuth;
+module.exports = doctorAuth;

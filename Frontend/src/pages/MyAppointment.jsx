@@ -10,6 +10,7 @@ const Appointments = () => {
   const [doctorsData, setDoctorsData] = useState({}); // Store doctors data by ID
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
   const [pastAppointments, setPastAppointments] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const { token, backEndUrl } = useContext(AppContext);
   const navigate = useNavigate();
 
@@ -24,17 +25,53 @@ const Appointments = () => {
       });
 
       if (data) {
-        setAppointments(data);
+        // Fetch reviews to check which appointments have been reviewed
+        const reviewsResponse = await axios.get(
+          `${backEndUrl}/patient/my-reviews`,
+          {
+            withCredentials: true,
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (Array.isArray(reviewsResponse.data)) {
+          setReviews(reviewsResponse.data);
+        }
+
+        //setAppointments(data);
+
+        //console.log("Reviews Response:", reviewsResponse.data);
+        //console.log("reviews", reviews);
+
+        // Create a set of reviewed appointment IDs for quick lookups
+        const reviewedAppointments = new Set();
+        if (reviewsResponse.data && Array.isArray(reviewsResponse.data)) {
+          reviewsResponse.data.forEach((review) => {
+            if (review.appointmentId) {
+              reviewedAppointments.add(review.appointmentId);
+            }
+          });
+        }
+
+        // Mark appointments as reviewed based on the set
+        const appointmentsWithReviewStatus = data.map((appt) => ({
+          ...appt,
+          isReviewed: reviewedAppointments.has(appt._id),
+        }));
+
+        setAppointments(appointmentsWithReviewStatus);
       } else {
         toast.error("Error fetching appointment");
       }
-      //onsole.log("Data",data)
-      //console.log("Appoinmrnt",appointments)
     } catch (error) {
       console.error("Fetch Error:", error);
       toast.error("Failed to load appointments");
     }
   };
+
+  //console.log("Fetched Reviews:", reviews);
 
   // Fetch doctor data by ID - updated to use the correct endpoint
   const fetchDoctorData = async (doctorId) => {
@@ -66,8 +103,8 @@ const Appointments = () => {
   useEffect(() => {
     if (token) {
       fetchAppointment();
-    }else{
-      console.log("Fetch appoitmnt not working")
+    } else {
+      console.log("Fetch appoitmnt not working");
     }
   }, [backEndUrl, token]);
 
@@ -121,6 +158,57 @@ const Appointments = () => {
     );
   };
 
+  //complete appointmnet
+  const markAppointmentsCompleted = async () => {
+    try {
+      const currentDate = new Date();
+  
+      // Filter past appointments
+      const pastAppointmentsToComplete = appointments.filter(
+        (appt) => new Date(appt.appointmentDate) < currentDate && appt.status !== "Completed"
+      );
+  
+      if (pastAppointmentsToComplete.length === 0) return;
+  
+      // Loop through and mark each past appointment as completed
+      for (let appt of pastAppointmentsToComplete) {
+        const response = await axios.post(
+          `${backEndUrl}/patient/complete-appointment/${appt._id}`,
+          {},
+          {
+            withCredentials: true,
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+  
+        if (response.data.success) {
+          toast.success(`Appointment on ${formatDate(appt.appointmentDate)} marked as completed`);
+        }
+      }
+  
+      // Update state to reflect the changes
+      setAppointments((prev) =>
+        prev.map((appt) =>
+          new Date(appt.appointmentDate) < currentDate
+            ? { ...appt, status: "Completed" }
+            : appt
+        )
+      );
+    } catch (error) {
+      console.error("Error marking appointments as completed:", error);
+      toast.error("Failed to update appointment status");
+    }
+  };
+  
+  // Automatically mark past appointments as completed when data is fetched
+  useEffect(() => {
+    if (appointments.length > 0) {
+      markAppointmentsCompleted();
+    }
+  }, [appointments]);
+  
+  
+
   // Cancel Appointment
   const handleCancelAppointment = async (id) => {
     const isConfirmed = window.confirm(
@@ -167,78 +255,95 @@ const Appointments = () => {
   };
 
   // Add this useEffect to separate past and upcoming appointments
-useEffect(() => {
-  if (appointments.length > 0) {
-    const current = new Date();
-    
-    const past = appointments.filter(
-      (appt) => new Date(appt.appointmentDate) < current
-    );
-    
-    const upcoming = appointments.filter(
-      (appt) => new Date(appt.appointmentDate) >= current
-    );
-    
-    setPastAppointments(past);
-    setUpcomingAppointments(upcoming);
-  }
-}, [appointments]);
+  useEffect(() => {
+    if (appointments.length > 0) {
+      const current = new Date();
 
+      const past = appointments.filter(
+        (appt) => new Date(appt.appointmentDate) < current
+      );
 
-// Add this function to handle review submission
-const submitReview = async (appointmentId) => {
-  const appointment = appointments.find((appt) => appt._id === appointmentId);
-  
-  if (!appointment) return;
+      const upcoming = appointments.filter(
+        (appt) => new Date(appt.appointmentDate) >= current
+      );
 
-  // Get the doctor ID directly from the appointment
-  const doctorId = getDoctorId(appointment.doctorId);
-  
-  if (!doctorId) {
-    toast.error("Doctor information not found");
-    return;
-  }
+      setPastAppointments(past);
+      setUpcomingAppointments(upcoming);
+    }
+  }, [appointments]);
 
-  console.log(appointment)
-  console.log(appointment.rating)
-  console.log(appointment.review)
-  console.log(appointment.doctorId || doctorsData.id)
-  console.log(appointmentId)
+  // Add this function to handle review submission
+  const submitReview = async (appointmentId) => {
+    const appointment = appointments.find((appt) => appt._id === appointmentId);
 
-  
-  try {
-    await axios.post(
-      `${backEndUrl}/patient/submit-review`,
-      {
-        rating: appointment.rating,
-        review: appointment.review,
-        doctorId: appointment.doctorId || doctorsData.id,
-        appointmentId: appointmentId
-      },
-      {
-        withCredentials: true,
-        headers: {
-          Authorization: `Bearer ${token}`,
+    if (!appointment) return;
+
+    // Get the doctor ID directly from the appointment
+    const doctorId = getDoctorId(appointment.doctorId);
+
+    if (!doctorId) {
+      toast.error("Doctor information not found");
+      return;
+    }
+
+    // console.log(appointment)
+    // console.log(appointment.rating)
+    // console.log(appointment.review)
+    // console.log(doctorId)
+    // console.log(appointmentId)
+
+    try {
+      await axios.post(
+        `${backEndUrl}/patient/submit-review`,
+        {
+          rating: appointment.rating,
+          review: appointment.review,
+          doctorId: doctorId,
+          appointmentId: appointmentId,
         },
-      }
-    );
-    
-    toast.success("Review submitted successfully");
-  } catch (error) {
-    console.error("Error submitting review:", error);
-    toast.error("Failed to submit review");
-  }
-};
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // Mark this appointment as reviewed locally
+      setAppointments((prev) =>
+        prev.map((appt) =>
+          appt._id === appointmentId ? { ...appt, isReviewed: true } : appt
+        )
+      );
+
+      setReviews([
+        ...reviews,
+        {
+          appointmentId,
+          review: appointment.review,
+          rating: appointment.rating,
+        },
+      ]);
+
+      toast.success("Review submitted successfully");
+    } catch (error) {
+      console.error("Error submitting review:", error);
+      toast.error("Failed to submit review");
+    }
+  };
+
+  //console.log(reviews);
 
   return (
     <div className="min-h-screen bg-gray-100 p-6 flex flex-col items-center">
       <h1 className="text-3xl font-bold text-gray-800 mb-6">My Appointments</h1>
 
       <div className="w-full max-w-3xl">
-        {[...upcomingAppointments, ...pastAppointments].map((appt) => {     //Combine in single array to ensure that upcoming appear first
+        {[...upcomingAppointments, ...pastAppointments].map((appt) => {
+          //Combine in single array to ensure that upcoming appear first
           const doctorId = getDoctorId(appt.doctorId);
-          const doctor = doctorId ? doctorsData[doctorId] || {} : {};  //If not available it will return {} 
-          const isPast = new Date(appt.appointmentDate) < new Date();  //If the appointment date is before today, it marks it as past
+          const doctor = doctorId ? doctorsData[doctorId] || {} : {}; //If not available it will return {}
+          const isPast = new Date(appt.appointmentDate) < new Date(); //If the appointment date is before today, it marks it as past
 
           return (
             <div
@@ -271,42 +376,84 @@ const submitReview = async (appointmentId) => {
               {isPast ? (
                 // Past Appointment - Show Rating & Review
                 <div className="w-1/3">
-                  <label className="text-sm font-medium">Rate Doctor:</label>
-                  <select
-                    value={appt.rating || ""}
-                    onChange={(e) =>
-                      handleRatingChange(appt._id, e.target.value)
-                    }
-                    className="w-full p-2 border rounded-lg mt-1"
-                  >
-                    <option value="">Select Rating</option>
-                    <option value="1">⭐</option>
-                    <option value="2">⭐⭐</option>
-                    <option value="3">⭐⭐⭐</option>
-                    <option value="4">⭐⭐⭐⭐</option>
-                    <option value="5">⭐⭐⭐⭐⭐</option>
-                  </select>
+                  {appt.isReviewed ? (
+                    // Find the corresponding review for this appointment
+                    (() => {
+                      const matchedReview = reviews.find(
+                        (review) => review.appointmentId === appt._id
+                      );
+                      return matchedReview ? (
+                        
+                        <div>
+                          {/* <div className="text-blue-500 p-10 font-medium">Completed</div> */}
+                          <div className="flex items-center gap-1 mb-2">
+                            <span className="text-sm font-medium">
+                              Your Rating:{" "}
+                            </span>
+                            <span className="text-yellow-500">
+                              {Array(parseInt(matchedReview.rating || 0))
+                                .fill("⭐")
+                                .join("")}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium mb-1">
+                              Your Review:
+                            </p>
+                            <p className="text-gray-700 bg-gray-100 p-2 rounded-lg text-center">
+                              {matchedReview.review || "No written review"}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-gray-500">No review written.</p>
+                      );
+                    })()
+                  ) : (
+                    // If not reviewed yet, show the review form
+                    <div>
+                      <label className="text-sm font-medium">
+                        Rate Doctor:
+                      </label>
+                      <select
+                        value={appt.rating || ""}
+                        onChange={(e) =>
+                          handleRatingChange(appt._id, e.target.value)
+                        }
+                        className="w-full p-2 border rounded-lg mt-1"
+                      >
+                        <option value="">Select Rating</option>
+                        <option value="1">⭐</option>
+                        <option value="2">⭐⭐</option>
+                        <option value="3">⭐⭐⭐</option>
+                        <option value="4">⭐⭐⭐⭐</option>
+                        <option value="5">⭐⭐⭐⭐⭐</option>
+                      </select>
 
-                  <textarea
-                    value={appt.review || ""}
-                    onChange={(e) =>
-                      handleReviewChange(appt._id, e.target.value)
-                    }
-                    placeholder="Write a review..."
-                    className="w-full mt-2 p-2 border-blue-600 rounded-lg resize-none"
-                    rows="2"
-                  />
-                  <button
-                    onClick={() => submitReview(appt._id)}
-                    className="mt-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-800"
-                  >
-                    Submit Review
-                  </button>
+                      <textarea
+                        value={appt.review || ""}
+                        onChange={(e) =>
+                          handleReviewChange(appt._id, e.target.value)
+                        }
+                        placeholder="Write a review..."
+                        className="w-full mt-2 p-2 border-blue-600 rounded-lg resize-none"
+                        rows="2"
+                      />
+                      <button
+                        onClick={() => submitReview(appt._id)}
+                        className="mt-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-800"
+                      >
+                        Submit Review
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 // Upcoming Appointment - Show "Upcoming" Status
                 <div className="text-blue-500 p-10 font-medium">Upcoming</div>
               )}
+
+              
 
               {/* Buttons for Upcoming Appointments */}
               {!isPast && (
@@ -322,6 +469,7 @@ const submitReview = async (appointmentId) => {
                   </button>
                 </div>
               )}
+
             </div>
           );
         })}

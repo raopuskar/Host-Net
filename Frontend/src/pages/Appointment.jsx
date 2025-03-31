@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useContext } from "react";
-import { useParams,useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import RelatedDoc from "../components/RelatedDoc";
 import { AppContext } from "../Context/AppContext";
 import axios from "axios";
 import { toast } from "react-toastify";
 
 const Appointment = () => {
-  const { backEndUrl, token, doctor, getDoctorData } = useContext(AppContext);
+  const { getDoctorReview, rating, backEndUrl, token, doctor, getDoctorData } =
+    useContext(AppContext);
   const { docId } = useParams();
   const navigate = useNavigate();
 
@@ -31,15 +32,20 @@ const Appointment = () => {
     //console.log("Doctor data in Appointment:", doctor);
   }, [doctor]);
 
+  useEffect(() => {
+    getDoctorReview(docId);
+  }, [docId, getDoctorReview]);
+
+  //console.log(rating)
+
   const setAppointment = async () => {
     try {
-
       if (!token) {
-        toast.error("Login First")
+        toast.error("Login First");
         navigate("/login"); // Redirect if not logged in
         return;
       }
-  
+
       if (!doctor || !docSlots[slotIndex]) {
         toast.error("Doctor information or slots not available");
         return;
@@ -122,6 +128,8 @@ const Appointment = () => {
       ]);
     }
   };
+  
+  const doctorRating = rating?.[docId]?.rating ? Number(rating[docId].rating) : 0;
 
   const renderStars = (rating) => {
     return Array.from({ length: 5 }, (_, i) => {
@@ -140,23 +148,25 @@ const Appointment = () => {
         <i key={i} className="fa-regular fa-star text-yellow-400 text-lg"></i>
       );
     });
-
   };
 
-  const calculateAverageRating = (reviews) => {
-    if (!reviews || reviews.length === 0) return 0;
+  // const calculateAverageRating = (reviews) => {
+  //   if (!reviews || reviews.length === 0) return 0;
 
-    const totalRating = reviews.reduce(
-      (sum, review) => sum + (review.rating || 0),
-      0
-    );
-    return totalRating / reviews.length;
-  };
+  //   const totalRating = reviews.reduce(
+  //     (sum, review) => sum + (review.rating || 0),
+  //     0
+  //   );
+  //   return totalRating / reviews.length;
+  // };
 
-  const averageRating = calculateAverageRating(doctor?.reviews || []);
-  
+  // const averageRating = calculateAverageRating(doctor?.reviews || []);
+
   //console.log(doctor.reviews)
-  
+
+  //console.log(doctorRating)
+
+
   return (
     doctor && (
       <div className="mb-10">
@@ -197,9 +207,9 @@ const Appointment = () => {
             </p>
             <p className="text-sm text-gray-900 mt-4">Rating :</p>
             <div className="flex items-center gap-2 mt-2">
-              {renderStars(averageRating)} 
+              {renderStars(doctorRating)}
               <span className="text-gray-600 text-lg ml-1">
-                ({averageRating.toFixed(1)})
+                ({doctorRating.toFixed(1)})
               </span>
             </div>
           </div>

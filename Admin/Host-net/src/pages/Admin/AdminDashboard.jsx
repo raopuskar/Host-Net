@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useContext, useEffect,useState } from 'react';
 import { Users, Calendar, CheckSquare, AlertCircle } from 'lucide-react';
+import { AppContext } from '../../context/AppContext';
 
 const SimpleCard = ({ title, count, icon }) => (
   <div className="bg-white p-4 rounded-lg shadow">
@@ -14,13 +15,69 @@ const SimpleCard = ({ title, count, icon }) => (
 );
 
 const AdminDashboard = () => {
-  // Sample data - replace with actual data from your API
+
+  const { allDoctors,allAppointments,allPatients } = useContext(AppContext);
+  const [doctorNames, setDoctorNames] = useState({});
+  const [patientNames, setPatientNames] = useState({});
+
+  // useEffect(() => {
+  //   try {
+  //     console.log("Total doctors:", allDoctors.length);
+  //   } catch (error) {
+  //     console.error("Error fetching doctors:", error);
+  //   }
+  // }, [allDoctors]);
+
+
+  //I can do this way or fetch data from backend like allconctor from appcontext
+  const completedAppointments = allAppointments.filter(appt => appt.status === "Completed").length;
+  const pendingAppointments = allAppointments.filter(appt => appt.status === "pending").length;
+
   const dashboardData = {
-    doctorCount: 24,
-    totalAppointments: 156,
-    completedAppointments: 98,
-    pendingAppointments: 58
+    doctorCount:  allDoctors.length || 0,
+    totalAppointments: allAppointments.length || 0,
+    completedAppointments: completedAppointments,
+    pendingAppointments: pendingAppointments
   };
+
+  //console.log(allAppointments)
+  
+  useEffect(() => {
+    if (!allDoctors.length || !allAppointments.length) return;
+  
+    const doctorMap = {};
+    const patientMap = {}
+    allAppointments.forEach((appointment) => {
+      const doctorId = appointment.doctorId[0]; // Access the first element of the array
+      const patientId = appointment.patientId[0];
+
+      //console.log(allPatients)
+
+      const doctor = allDoctors.find(doc => doc._id === doctorId);
+      const patient = allPatients.find(doc => doc._id === patientId);
+  
+      if (doctor) {
+        patientMap[appointment._id] = patient.name;
+      }
+
+      if (patient) {
+        doctorMap[appointment._id] = doctor.name;
+      }
+      
+    });
+  
+    setDoctorNames(doctorMap);
+    setPatientNames(patientMap);
+
+  }, [allDoctors,allPatients, allAppointments]);
+
+  // console.log("All Patients in AdminDashboard:", allPatients);
+  // console.log("Is allPatients an array?", Array.isArray(allPatients));
+
+
+  const latestAppointment = allAppointments.slice(-4).reverse(); // Get last 4 appointments
+
+  
 
   return (
     <div className="p-4 bg-gray-50 w-full">
@@ -48,7 +105,7 @@ const AdminDashboard = () => {
         <SimpleCard 
           title="Pending" 
           count={dashboardData.pendingAppointments} 
-          icon={<AlertCircle size={24} className="text-orange-500" />} 
+          icon={<AlertCircle size={24} className="bg-blue-100 text-white-800" />} 
         />
       </div>
       
@@ -64,24 +121,28 @@ const AdminDashboard = () => {
             </tr>
           </thead>
           <tbody>
-            <tr className="border-b">
-              <td className="py-2">John Doe</td>
-              <td className="py-2">Dr. Smith</td>
-              <td className="py-2">2025-03-10</td>
-              <td className="py-2"><span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Completed</span></td>
-            </tr>
-            <tr className="border-b">
-              <td className="py-2">Jane Smith</td>
-              <td className="py-2">Dr. Johnson</td>
-              <td className="py-2">2025-03-10</td>
-              <td className="py-2"><span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">In Progress</span></td>
-            </tr>
-            <tr>
-              <td className="py-2">Mike Brown</td>
-              <td className="py-2">Dr. Garcia</td>
-              <td className="py-2">2025-03-11</td>
-              <td className="py-2"><span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs">Pending</span></td>
-            </tr>
+            {latestAppointment.length > 0 ? (
+              latestAppointment.map((appointment) => (
+                <tr key={appointment._id} className="border-b">
+                  <td className="py-2">{patientNames[appointment._id] || "Unknown"}</td>
+                  <td className="py-2">{doctorNames[appointment._id] || "Unknown"}</td>
+                  <td className="py-2">{new Date(appointment.appointmentDate).toLocaleDateString()}</td>
+                  <td className="py-2">
+                    <span className={`px-2 py-1 rounded-full text-xs
+                      ${appointment.status === "Completed" ? "bg-green-100 text-green-800" :
+                        appointment.status === "pending" ? "bg-blue-500 text-white" : ""
+                      }`}
+                    >
+                      {appointment.status}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="4" className="text-center py-2">No Appointments Available</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

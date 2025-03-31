@@ -42,6 +42,10 @@ const doctorSchema = mongoose.Schema({
         type: String,
         required: true
     },
+    phone: {
+        type: Number,
+        default: ""
+    },
     slot_booked: [ 
         {
             type: Number,
@@ -97,5 +101,16 @@ const doctorSchema = mongoose.Schema({
         default: Date.now
     }
 },{minimize: false});  //we use minimize false to store empty objects in the slot_booked field
+
+// Function to calculate average rating
+doctorSchema.methods.calculateAverageRating = function () {
+    if (this.reviews.length === 0) {
+        this.averageRating = 0;
+    } else {
+        const totalRatings = this.reviews.reduce((sum, review) => sum + review.rating, 0);
+        this.averageRating = totalRatings / this.reviews.length;
+    }
+    return this.averageRating;
+};
 
 module.exports = mongoose.model("doctor",doctorSchema);

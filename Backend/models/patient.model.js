@@ -42,6 +42,12 @@ const patientSchema = mongoose.Schema({
         ref: "appointment" 
         }
     ],
+    reviews: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "review"
+        }
+    ],
     medicalHistory:[
         {
         diagnosis: String,

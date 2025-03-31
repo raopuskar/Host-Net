@@ -281,7 +281,7 @@ module.exports.submitReview = async function(req, res) {
     const { review, rating, doctorId, appointmentId } = req.body;
     
     // check if the appointment exists
-    const appointment = await appointmentSchema.findOne({
+    const appointment = await appointmentModel.findOne({
       _id: appointmentId,
       patientId: patientId,
       doctorId: doctorId
@@ -293,6 +293,12 @@ module.exports.submitReview = async function(req, res) {
         message: "Appointment not found"
       });
     }
+
+    // console.log(patientId)
+    // console.log(review)
+    // console.log(rating)
+    // console.log(doctorId)
+    // console.log(appointmentId)
     
     // Create new review
     const newReview = await reviewSchema.create({
@@ -319,3 +325,63 @@ module.exports.submitReview = async function(req, res) {
     });
   }
 };
+
+module.exports.myReviews = async function (req, res) {
+  try {
+    const patientId = req.user.id; // ✅ Get patientId from middleware
+
+    if (!patientId) {
+      return res.status(400).json({ message: "Patient ID is required" });
+    }
+
+    const reviews = await reviewSchema.find({ patientId }).populate("doctorId");
+
+    if (!reviews || reviews.length === 0) {
+      console.log("No reviews found");
+      return res.status(404).json({ message: "No reviews found" });
+    }
+
+    //console.log("Fetched Reviews:", reviews);
+    res.status(200).json(reviews); //  Send response to frontend
+
+  } catch (error) {
+    console.error("Error fetching reviews:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+
+module.exports.completAppointment = async function(req,res){
+  try {
+    const appointmentId = req.params.id;
+
+    // Find and update the appointment status
+    const appointment = await appointmentModel.findByIdAndUpdate(
+      appointmentId,
+      { status: "Completed" },
+      { new: true }
+    );
+    //console.log(appointment)
+    if (!appointment) {
+      return res.status(404).json({ success: false, message: "Appointment not found" });
+    }
+
+    res.json({ success: true, message: "Appointment marked as completed", appointment });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+module.exports.getAllPatients = async function(req,res) {
+  try {
+    const allPatients = await patientModel.find();
+    //console.log(allPatients)
+    res.status(200).json(allPatients)  
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ success: false, message: "error all patient fetching" });
+  }
+
+  
+}
