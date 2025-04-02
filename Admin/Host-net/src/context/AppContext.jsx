@@ -21,7 +21,7 @@ const AppContextProvider = (props) => {
 
     const getDoctorData = async (docId) => {
         try {
-            console.log("App context: ",docId)
+            //console.log("App context: ",docId)
             const { data } = await axios.get(`${backEndUrl}/doctor/get-profile/${docId}`, {
                 withCredentials: true,
                 headers: {
@@ -86,7 +86,7 @@ const AppContextProvider = (props) => {
         }
         catch (error) {
             console.log(error)
-            toast.error(error.message) // Removed quotes to show actual error message
+            toast.error(error.message) 
         }
     }
     

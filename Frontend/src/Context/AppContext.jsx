@@ -14,6 +14,7 @@ export const AppContextProvider = (props) => {
     const [userData, setUserData] = useState(false);
     const [allDoctors, setAllDoctors] = useState([]);
     const [rating, setRating] = useState(null);
+    const [specializations,setSpecializations] = useState([])
 
 
     const getDoctorData = async (docId) => {
@@ -90,6 +91,16 @@ export const AppContextProvider = (props) => {
         }
     }   
 
+    useEffect(() => {
+    const data = allDoctors.map((doc) => {
+        // Check if specialty is an array and not empty
+        return doc.specialty;
+    });
+    setSpecializations(data);
+}, [backEndUrl, allDoctors]);
+
+    //console.log("spec",specializations)
+
     const loadUserProfileData = async () => {
         try {
             const { data } = await axios.get(`${backEndUrl}/patient/my-profile`, {
@@ -126,7 +137,8 @@ export const AppContextProvider = (props) => {
         setAllDoctors,
         getDoctorReview,
         rating,
-        setRating
+        setRating,
+        specializations
     }
     
     

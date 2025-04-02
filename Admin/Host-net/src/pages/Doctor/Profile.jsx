@@ -16,8 +16,9 @@ const DoctorProfile = () => {
   // State for form submission feedback
   const [successMessage, setSuccessMessage] = useState("");
 
-  const [doctorId, setDoctorId] = useState([]);
-  const [profile, setProfile] = useState([]);
+  const [doctorId, setDoctorId] = useState(null);
+  const [profile, setProfile] = useState({});
+
 
   const { backEndUrl, getDoctorData, doctors } = useContext(AppContext);
   const { dToken } = useContext(DoctorContext);
@@ -30,37 +31,42 @@ const DoctorProfile = () => {
           headers: { Authorization: `Bearer ${dToken}` },
         });
 
+        //console.log("Id",data)
+  
         if (data) {
-          setDoctorId(data);
+          setDoctorId(data); 
         } else {
           toast.error(data.message);
         }
       } catch (error) {
         console.log(error);
-        toast.error(
-          error.response?.data?.message || "Error fetching doctor data"
-        );
+        toast.error(error.response?.data?.message || "Error fetching doctor data");
       }
     };
     fetchId();
-  },[backEndUrl]);
+  }, [backEndUrl, dToken]);
+  
 
   //console.log(doctorId)
 
-  console.log(doctors)
-
-  useEffect(()=> {
-    getDoctorData(doctorId)
-  },[doctorId])
+  //console.log(doctors)
 
   useEffect(() => {
-    if (doctors) {
-        setProfile(doctors);
+    if (doctorId) {
+      getDoctorData(doctorId);
     }
-}, [doctors]); // Run only when doctors updates
+  }, [doctorId]);
+  
+
+  useEffect(() => {
+    if (doctors && Object.keys(doctors).length > 0) {
+      setProfile(doctors);
+    }
+  }, [doctors]);
+  
 
 
-  console.log("Profile",profile)
+  //console.log("Profile",profile)
 
   
 
@@ -74,38 +80,74 @@ const DoctorProfile = () => {
   };
 
   // Handle image change
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+  
+    if (!file || !doctorId) return;
+  
+    const formData = new FormData();
+    formData.append("profileImage", file);
+  
+    try {
+      const { data } = await axios.put(
+        `${backEndUrl}/doctor/upload-image/${doctorId}`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${dToken}`,
+            "Content-Type": "multipart/form-data",
+          },
+          withCredentials: true,
+        }
+      );
+  
+      setProfile((prev) => ({
+        ...prev,
+        image: data.imageUrl, // Ensure correct image URL
+      }));
+  
+      toast.success("Profile image updated!");
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast.error(error.response?.data?.message || "Failed to upload image");
     }
   };
+  
+  
 
   // Handle form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+  
+    try {
+      const { data } = await axios.put(
+        `${backEndUrl}/doctor/update-profile/${doctorId}`,
+        profile, // Send updated profile data
+        {
+          headers: {
+            Authorization: `Bearer ${dToken}`,
+            "Content-Type": "application/json",
+          },
+          withCredentials: true,
+        }
 
-    // In a real application, you would send the data to an API here
-    console.log("Submitting updated profile:", profile);
-
-    if (imagePreview) {
-      setProfileImage(imagePreview);
-      setImagePreview(null);
+      );
+      //console.log(profile)
+  
+      // Update frontend state with the new profile data
+      setProfile(data.updatedProfile);
+      toast.success("Profile updated successfully!");
+  
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to update profile"
+      );
     }
-
-    // Show success message
-    setSuccessMessage("Profile updated successfully!");
-
-    // Hide success message after 3 seconds
-    setTimeout(() => {
-      setSuccessMessage("");
-    }, 3000);
   };
 
+  //console.log("Updated profile:",profile)
+  
 
 
   return (
@@ -132,7 +174,7 @@ const DoctorProfile = () => {
                 <div className="relative mb-4">
                   <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-white shadow-lg">
                     <img
-                      src={`${backEndUrl}/images/uploads/${profile.image}`}
+                      src={profile.image ? `${backEndUrl}/images/uploads/${profile.image}` : "/api/placeholder/150/150"}
                       alt="Doctor profile"
                       className="w-full h-full object-cover"
                     />
@@ -223,7 +265,7 @@ const DoctorProfile = () => {
                           About
                         </label>
                         <textarea
-                          name="bio"
+                          name="about"
                           value={profile.about}
                           onChange={handleInputChange}
                           rows="4"
@@ -246,7 +288,7 @@ const DoctorProfile = () => {
                           Specialization
                         </label>
                         <select
-                          name="specialization"
+                          name="specialty"
                           value={profile.specialty}
                           onChange={handleInputChange}
                           disabled
@@ -292,7 +334,7 @@ const DoctorProfile = () => {
                         </label>
                         <input
                           type="number"
-                          name="yearsOfExperience"
+                          name="experience"
                           value={profile.experience}
                           onChange={handleInputChange}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -317,7 +359,7 @@ const DoctorProfile = () => {
                         </label>
                         <input
                           type="number"
-                          name="consultationFee"
+                          name="fees"
                           value={profile.fees}
                           onChange={handleInputChange}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -343,6 +385,7 @@ const DoctorProfile = () => {
                           name="email"
                           value={profile.email}
                           onChange={handleInputChange}
+                          disabled
                           className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                           required
                         />
@@ -365,7 +408,7 @@ const DoctorProfile = () => {
                         </label>
                         <input
                           type="text"
-                          name="address"
+                          name="location"
                           value={profile.location}
                           onChange={handleInputChange}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"

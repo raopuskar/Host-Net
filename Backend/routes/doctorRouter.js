@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const doctorController = require('../controllers/doctorController')
 const doctorAuth = require("../middlewares/doctorMiddleware");
+const upload = require("../middlewares/multer");
 
 router.get("/",function(req,res){
     res.send("Doctor Page")
@@ -28,6 +29,11 @@ router.get("/get-all-reviews",doctorController.getAllReview)
 router.patch("/update-appointment-status/:id",doctorAuth,doctorController.updateAppointment)
 
 router.get('/get-id',doctorAuth,doctorController.getId);
+
+router.put("/update-profile/:id",doctorController.updateProfile);
+
+// Route to upload profile image
+router.put("/upload-image/:id", upload.single("profileImage"),doctorController.uploadImage); 
 
 
 //for bulk upload

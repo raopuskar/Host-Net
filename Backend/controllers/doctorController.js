@@ -264,6 +264,51 @@ const getId = async function(req, res) {
   }
 };
 
+const updateProfile = async function(req,res){
+  const { id } = req.params;
+  const updateData = req.body; // Update data from the frontend (name, bio, etc.)
+
+  try {
+    const updatedDoctor = await doctorModel.findByIdAndUpdate(id, updateData, {
+      new: true, // Return the updated document
+      runValidators: true, // Validate the schema before updating
+    });
+
+    if (!updatedDoctor) {
+      return res.status(404).json({ message: "Doctor not found" });
+    }
+
+    res.status(200).json({ updatedProfile: updatedDoctor });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to update profile" });
+  }
+};
+
+
+const uploadImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No image uploaded" });
+    }
+
+    const imageUrl = `${req.file.filename}`;
+
+    const doctor = await doctorModel.findByIdAndUpdate(
+      req.params.id,
+      { image: imageUrl },
+      { new: true }
+    );
+
+    if (!doctor) {
+      return res.status(404).json({ message: "Doctor not found" });
+    }
+
+    res.json({ message: "Profile image updated", imageUrl });
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error });
+  }
+};
 
 
 
@@ -271,4 +316,5 @@ const getId = async function(req, res) {
 
 
 
-module.exports = { loginDoctor, getAllDoctors, deleteDoctor, addManyDoctors, getDoctorData,getDoctorRaiting,getAllDoctorRatings,getAllAppointment,getMyAppointment,getAllReview,updateAppointment,getId };
+
+module.exports = { loginDoctor, getAllDoctors, deleteDoctor, addManyDoctors, getDoctorData,getDoctorRaiting,getAllDoctorRatings,getAllAppointment,getMyAppointment,getAllReview,updateAppointment,getId,updateProfile,uploadImage };
