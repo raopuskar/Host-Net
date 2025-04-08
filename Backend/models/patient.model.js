@@ -32,10 +32,6 @@ const patientSchema = mongoose.Schema({
         type: String,
         default: ""
     },
-    phoneNumber: {
-        type: String,
-        default: ""
-    },
     appointment: [
         {
         type: mongoose.Schema.Types.ObjectId, 
