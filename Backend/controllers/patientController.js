@@ -335,13 +335,13 @@ module.exports.myReviews = async function (req, res) {
     }
 
     const reviews = await reviewSchema.find({ patientId }).populate("doctorId");
+    //console.log("Fetched Reviews:", reviews);
 
     if (!reviews || reviews.length === 0) {
       console.log("No reviews found");
       return res.status(404).json({ message: "No reviews found" });
     }
 
-    //console.log("Fetched Reviews:", reviews);
     res.status(200).json(reviews); //  Send response to frontend
 
   } catch (error) {

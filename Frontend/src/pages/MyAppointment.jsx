@@ -17,60 +17,68 @@ const Appointments = () => {
   // Fetch Appointments
   const fetchAppointment = async () => {
     try {
-      const { data } = await axios.get(`${backEndUrl}/patient/my-appointment`, {
+      // Step 1: Fetch appointments
+      const { data: appointmentsData } = await axios.get(`${backEndUrl}/patient/my-appointment`, {
         withCredentials: true,
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-
-      if (data) {
-        // Fetch reviews to check which appointments have been reviewed
-        const reviewsResponse = await axios.get(
-          `${backEndUrl}/patient/my-reviews`,
-          {
-            withCredentials: true,
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (Array.isArray(reviewsResponse.data)) {
-          setReviews(reviewsResponse.data);
-        }
-
-        //setAppointments(data);
-
-        //console.log("Reviews Response:", reviewsResponse.data);
-        //console.log("reviews", reviews);
-
-        // Create a set of reviewed appointment IDs for quick lookups
-        const reviewedAppointments = new Set();
-        if (reviewsResponse.data && Array.isArray(reviewsResponse.data)) {
-          reviewsResponse.data.forEach((review) => {
-            if (review.appointmentId) {
-              reviewedAppointments.add(review.appointmentId);
-            }
-          });
-        }
-
-        // Mark appointments as reviewed based on the set
-        const appointmentsWithReviewStatus = data.map((appt) => ({
-          ...appt,
-          isReviewed: reviewedAppointments.has(appt._id),
-        }));
-
-        setAppointments(appointmentsWithReviewStatus);
-      } else {
-        toast.error("Error fetching appointment");
+  
+      if (!appointmentsData) {
+        toast.error("No appointments found");
+        setAppointments([]);
+        return;
       }
+  
+      // Step 2: Fetch reviews - handle possible 404 gracefully
+      let reviewsData = [];
+      try {
+        const { data } = await axios.get(`${backEndUrl}/patient/my-reviews`, {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        
+        if (Array.isArray(data)) {
+          reviewsData = data;
+          setReviews(data);
+        }
+      } catch (reviewError) {
+        // If it's a 404 (no reviews found), this is normal and not an error
+        if (reviewError.response && reviewError.response.status === 404) {
+          console.log("No reviews found - this is normal for new users");
+        } else {
+          // Log other review fetch errors but don't fail the whole operation
+          console.error("Error fetching reviews:", reviewError);
+        }
+      }
+  
+      // Step 3: Create a set of reviewed appointment IDs for quick lookups
+      const reviewedAppointments = new Set();
+      reviewsData.forEach((review) => {
+        if (review.appointmentId) {
+          reviewedAppointments.add(review.appointmentId);
+        }
+      });
+  
+      // Step 4: Mark appointments as reviewed based on the set
+      const appointmentsWithReviewStatus = appointmentsData.map((appt) => ({
+        ...appt,
+        isReviewed: reviewedAppointments.has(appt._id),
+      }));
+  
+      setAppointments(appointmentsWithReviewStatus);
+      
     } catch (error) {
-      console.error("Fetch Error:", error);
+      console.error("Fetch Appointments Error:", error);
       toast.error("Failed to load appointments");
+      setAppointments([]);
     }
   };
 
+  
   //console.log("Fetched Reviews:", reviews);
 
   // Fetch doctor data by ID - updated to use the correct endpoint
