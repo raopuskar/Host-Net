@@ -4,7 +4,8 @@ A fully functional, secure, and responsive full-stack web application that allow
 
 ## 🔗 Demo
 
-<video src="demo.mp4" controls width="600"></video>
+🎥 [Click here to watch the demo](demo.mp4)
+
 
 ## 🛠️ Tech Stack
 
